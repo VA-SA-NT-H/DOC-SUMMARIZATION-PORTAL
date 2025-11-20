@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: summarizer-postgres
+    environment:
+      POSTGRES_DB: summarizer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2004
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - summarizer-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U summarizer_user -d summarizer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: summarizer-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - summarizer-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: summarizer-backend
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/summarizer
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: 2004
+      JWT_SECRET: your-256-bit-secret-key-should-be-at-least-256-bits-long
+      AI_SERVICE_URL: http://ai-service:8001
+      FILE_STORAGE_PATH: /app/uploads
+      MAX_FILE_SIZE: 52428800
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./uploads:/app/uploads
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - summarizer-network
+    restart: unless-stopped
+
+  # Python AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: summarizer-ai-service
+    environment:
+      MODEL_CACHE_DIR: /app/models
+      MAX_TEXT_LENGTH: 1000000
+      BATCH_SIZE: 8
+    volumes:
+      - ai_models:/app/models
+    ports:
+      - "8001:8001"
+    networks:
+      - summarizer-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Give more time for models to load
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: summarizer-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - summarizer-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ai_models:
+    driver: local
+
+networks:
+  summarizer-network:
+    driver: bridge
