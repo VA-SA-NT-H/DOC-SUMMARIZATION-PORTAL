@@ -30,12 +30,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex, WebRequest request) {
         log.warn("Responding with upstream error: {} - {}", ex.getStatusCode(), ex.getReason());
         ErrorResponse e = new ErrorResponse(
-            LocalDateTime.now(),
-            ex.getStatusCode().value(),
-            ex.getReason(),
-            ex.getMessage(),
-            request.getDescription(false)
-            );
+                LocalDateTime.now(),
+                ex.getStatusCode().value(),
+                ex.getReason(),
+                ex.getMessage(),
+                request.getDescription(false));
         return ResponseEntity.status(ex.getStatusCode()).body(e);
     }
 
@@ -43,26 +42,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleHttpClientError(HttpClientErrorException ex, WebRequest request) {
         log.error("Upstream HTTP error: {} body: {}", ex.getStatusCode(), ex.getResponseBodyAsString());
         ErrorResponse e = new ErrorResponse(
-            LocalDateTime.now(),
-            ex.getStatusCode().value(),
-            ex.getResponseBodyAsString(), 
-            ex.getMessage(), 
-            request.getDescription(false)
-            );
+                LocalDateTime.now(),
+                ex.getStatusCode().value(),
+                ex.getResponseBodyAsString(),
+                ex.getMessage(),
+                request.getDescription(false));
         return ResponseEntity.status(ex.getStatusCode()).body(e);
     }
-
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(
             UserAlreadyExistsException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.CONFLICT.value(),
-            "Conflict",
-            ex.getMessage(),
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
@@ -70,12 +66,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.NOT_FOUND.value(),
-            "Not Found",
-            ex.getMessage(),
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
@@ -83,12 +78,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(
             BadCredentialsException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.UNAUTHORIZED.value(),
-            "Unauthorized",
-            "Invalid email or password",
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Invalid email or password",
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
@@ -96,12 +90,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(
             UsernameNotFoundException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.UNAUTHORIZED.value(),
-            "Unauthorized",
-            "User not found",
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "User not found",
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
@@ -109,13 +102,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleJwtException(
             JwtException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.UNAUTHORIZED.value(),
-            "Unauthorized",
-            ex.getMessage(),
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                ex.getMessage(),
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(FileProcessingException.class)
+    public ResponseEntity<ErrorResponse> handleFileProcessingException(
+            FileProcessingException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "File Processing Error",
+                ex.getMessage(),
+                request.getDescription(false));
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -129,12 +133,11 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.BAD_REQUEST.value(),
-            "Validation Error",
-            "Invalid input parameters",
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation Error",
+                "Invalid input parameters",
+                request.getDescription(false));
         errorResponse.setValidationErrors(errors);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -144,12 +147,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
-            LocalDateTime.now(),
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Internal Server Error",
-            "An unexpected error occurred",
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "An unexpected error occurred",
+                request.getDescription(false));
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -170,22 +172,52 @@ public class GlobalExceptionHandler {
         }
 
         // Getters and setters
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
 
-        public int getStatus() { return status; }
-        public void setStatus(int status) { this.status = status; }
+        public void setTimestamp(LocalDateTime timestamp) {
+            this.timestamp = timestamp;
+        }
 
-        public String getError() { return error; }
-        public void setError(String error) { this.error = error; }
+        public int getStatus() {
+            return status;
+        }
 
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
+        public void setStatus(int status) {
+            this.status = status;
+        }
 
-        public String getPath() { return path; }
-        public void setPath(String path) { this.path = path; }
+        public String getError() {
+            return error;
+        }
 
-        public Map<String, String> getValidationErrors() { return validationErrors; }
-        public void setValidationErrors(Map<String, String> validationErrors) { this.validationErrors = validationErrors; }
+        public void setError(String error) {
+            this.error = error;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        public Map<String, String> getValidationErrors() {
+            return validationErrors;
+        }
+
+        public void setValidationErrors(Map<String, String> validationErrors) {
+            this.validationErrors = validationErrors;
+        }
     }
 }

@@ -11,7 +11,13 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy source code
+# Copy source code
 COPY . .
+
+# Build arguments
+ARG REACT_APP_API_URL
+ARG REACT_APP_WS_URL
+ARG REACT_APP_CHAT_WS_URL
 
 # Build the application
 RUN npm run build
@@ -25,7 +31,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80

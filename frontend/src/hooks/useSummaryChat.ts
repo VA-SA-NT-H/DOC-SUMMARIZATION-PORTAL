@@ -9,8 +9,16 @@ interface UseSummaryChatProps {
 
 export const useSummaryChat = ({
   summaryId,
-  wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8001'
+  wsUrl // Optional override, otherwise auto-detect
 }: UseSummaryChatProps): UseSummaryChatReturn => {
+  // Auto-detect WebSocket URL based on current location (Nginx proxy)
+  const getWsUrl = () => {
+    if (wsUrl) return wsUrl;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    return `${protocol}//${host}`;
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +44,8 @@ export const useSummaryChat = ({
       setConnectionStatus('connecting');
       setError(null);
 
-      const wsEndpoint = `${wsUrl}/ws/chat/${summaryId}`;
+      const baseUrl = getWsUrl();
+      const wsEndpoint = `${baseUrl}/ws/chat/${summaryId}`;
       ws.current = new WebSocket(wsEndpoint);
 
       ws.current.onopen = () => {

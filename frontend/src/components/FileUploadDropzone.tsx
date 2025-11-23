@@ -57,8 +57,6 @@ const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
         clearInterval(progressInterval);
         setUploadProgress(100);
 
-        onUploadSuccess(document);
-
         // Auto-generate summary if option is enabled
         if (autoGenerateSummary && document.status !== 'failed') {
           try {
@@ -70,6 +68,8 @@ const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
             console.error('Failed to auto-generate summary:', error);
           }
         }
+
+        onUploadSuccess(document);
       } catch (error: any) {
         const message = error.response?.data?.message || 'Upload failed';
         onUploadError(message);
@@ -177,7 +177,7 @@ const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
       {uploading && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="body2" gutterBottom>
-            Uploading document...
+            Uploading and generating summary...
           </Typography>
           <LinearProgress variant="determinate" value={uploadProgress} />
         </Box>

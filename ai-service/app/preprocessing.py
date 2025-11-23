@@ -13,18 +13,10 @@ class TextPreprocessor:
         if not text or not text.strip():
             return ""
 
-        # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
-
-        # Remove special characters but keep basic punctuation
-        text = re.sub(r'[^\w\s\.\,\!\?\;\:\-\(\)\[\]\{\}\"\']', ' ', text)
-
-        # Fix spacing around punctuation
-        text = re.sub(r'\s+([.,!?;:])', r'\1', text)
-
-        # Remove excessive line breaks
-        text = re.sub(r'\n+', '\n', text)
-
+        # Remove excessive whitespace but preserve paragraph breaks
+        text = re.sub(r'\n\s*\n', '\n\n', text)  # Normalize paragraph breaks
+        text = re.sub(r'[ \t]+', ' ', text)      # Normalize horizontal whitespace
+        
         # Strip leading/trailing whitespace
         text = text.strip()
 

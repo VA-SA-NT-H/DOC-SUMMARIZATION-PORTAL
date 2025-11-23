@@ -1,0 +1,1 @@
+This is a sample document about Artificial Intelligence. AI is transforming the world by automating tasks and providing insights from data. Machine learning is a subset of AI where computers learn from data without being explicitly programmed. Deep learning is a further subset using neural networks.

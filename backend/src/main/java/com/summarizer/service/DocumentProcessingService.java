@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -59,7 +58,7 @@ public class DocumentProcessingService {
         String fileType = determineFileType(file, fileExtension);
 
         // Create user's directory if it doesn't exist
-        Path userDir = Paths.get(storagePath, userId.toString());
+        Path userDir = Path.of(storagePath, userId.toString());
         if (!Files.exists(userDir)) {
             Files.createDirectories(userDir);
         }
@@ -173,7 +172,7 @@ public class DocumentProcessingService {
 
     public void deleteDocumentFile(UUID userId, String filePath) {
         try {
-            Path path = Paths.get(filePath);
+            Path path = Path.of(filePath);
             if (Files.exists(path)) {
                 Files.delete(path);
             }

@@ -29,12 +29,14 @@ interface SummaryChatProps {
   summaryId: string;
   chatHook: UseSummaryChatReturn;
   maxContentHeight?: number;
+  initialSummary?: string;
 }
 
 const SummaryChat: React.FC<SummaryChatProps> = ({
   summaryId,
   chatHook,
-  maxContentHeight = 600
+  maxContentHeight = 600,
+  initialSummary
 }) => {
   const theme = useTheme();
   const {
@@ -50,6 +52,17 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
     setConversationTitle,
     disconnect
   } = chatHook;
+
+  // Inject initial summary as first message if messages are empty
+  useEffect(() => {
+    if (initialSummary && messages.length === 0) {
+      // We need to manually inject this into the local state of the hook or just render it.
+      // Since we can't easily modify the hook's state from here without exposing a setter,
+      // we'll handle it by rendering a special first message or using a local state that merges.
+      // However, the cleanest way is to ask the hook to add it, or just display it.
+      // Let's display it as a static first message in the render loop if it exists.
+    }
+  }, [initialSummary, messages.length]);
 
   const [inputMessage, setInputMessage] = useState('');
   const [saveEnabled, setSaveEnabled] = useState(false);
@@ -143,25 +156,25 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
       >
         <Box
           sx={{
-            maxWidth: '70%',
+            maxWidth: '85%',
             display: 'flex',
             flexDirection: isUser ? 'row-reverse' : 'row',
             alignItems: 'flex-start',
-            gap: 1
+            gap: 2
           }}
         >
           {/* Avatar */}
           <Box
             sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
+              width: 36,
+              height: 36,
+              borderRadius: isUser ? '50%' : '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: isUser
-                ? theme.palette.primary.main
-                : theme.palette.secondary.main,
+                ? '#5c6bc0' // User color
+                : '#10a37f', // ChatGPT green
               color: 'white',
               flexShrink: 0
             }}
@@ -175,41 +188,26 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
 
           {/* Message bubble */}
           <Paper
-            elevation={1}
+            elevation={0}
             sx={{
               p: 2,
               backgroundColor: isUser
-                ? theme.palette.primary.main
-                : theme.palette.grey[100],
-              color: isUser ? 'white' : theme.palette.text.primary,
+                ? '#5c6bc0'
+                : '#f7f7f8',
+              color: isUser ? 'white' : '#374151',
               borderRadius: 2,
-              borderBottomRightRadius: isUser ? 0 : 2,
-              borderBottomLeftRadius: isUser ? 2 : 0,
-              position: 'relative'
+              position: 'relative',
+              lineHeight: 1.6
             }}
           >
             {isTyping ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CircularProgress size={16} />
+                <CircularProgress size={16} color="inherit" />
                 <Typography variant="body2">AI is thinking...</Typography>
               </Box>
             ) : (
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                 {message.content}
-              </Typography>
-            )}
-
-            {!isTyping && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  mt: 1,
-                  opacity: 0.7,
-                  fontSize: '0.7rem'
-                }}
-              >
-                {formatTime(message.timestamp)}
               </Typography>
             )}
           </Paper>
@@ -327,26 +325,53 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
         sx={{
           flex: 1,
           overflowY: 'auto',
-          p: 2,
+          p: 3,
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: maxContentHeight - 200, // Account for header and input
-          '&::-webkit-scrollbar': {
-            width: '6px'
-          },
-          '&::-webkit-scrollbar-track': {
-            background: alpha(theme.palette.grey[300], 0.3),
-            borderRadius: '3px'
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: theme.palette.grey[500],
-            borderRadius: '3px',
-            '&:hover': {
-              background: theme.palette.grey[700]
-            }
-          }
+          gap: 2,
+          maxHeight: maxContentHeight - 100,
+          backgroundColor: '#ffffff'
         }}
       >
+        {/* Initial Summary Message */}
+        {initialSummary && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+            <Box sx={{ maxWidth: '85%', display: 'flex', flexDirection: 'row', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '4px', // ChatGPT style square-ish
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#10a37f', // ChatGPT green
+                  color: 'white',
+                  flexShrink: 0
+                }}
+              >
+                <AIIcon fontSize="small" />
+              </Box>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  backgroundColor: '#f7f7f8',
+                  color: '#374151',
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                  Document Summary
+                </Typography>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {initialSummary}
+                </Typography>
+              </Paper>
+            </Box>
+          </Box>
+        )}
+
         {messages.map((message, index) => renderMessage(message, index))}
         <div ref={messagesEndRef} />
       </Box>

@@ -91,41 +91,23 @@ async def summarize_text(request: SummarizeRequest):
 
         logger.info(f"Processing summarization request: original_length={original_length}, target_length={target_length}")
 
-        # Get summarizer pipeline
-        summarizer = model_manager.get_summarizer(request.model_name)
-
-        # Generate summary
-        start_time = time.time()
-
-        summary_result = summarizer(
+        # Generate summary using Gemini
+        summary_result = model_manager.generate_summary_for_model(
+            request.model_name,
             processed_text,
-            max_length=target_length,
-            min_length=max(30, target_length // 2),
-            do_sample=False,
-            early_stopping=True
+            request.summary_ratio
         )
-
-        processing_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
-
-        # Extract summary text
-        summary_text = summary_result[0]['summary_text'].strip()
-
-        # Clean up summary
-        summary_text = TextPreprocessor.clean_text(summary_text)
-
-        # Calculate confidence score (mock implementation)
-        confidence_score = calculate_confidence_score(summary_text, processed_text)
 
         response = SummarizeResponse(
-            summary_text=summary_text,
-            model_used=request.model_name or model_manager.default_model,
-            processing_time_ms=processing_time,
-            confidence_score=confidence_score,
+            summary_text=summary_result["summary_text"],
+            model_used=summary_result["metadata"]["model_used"],
+            processing_time_ms=int(summary_result["metadata"]["processing_time_ms"]),
+            confidence_score=0.9, # Mock confidence
             original_length=original_length,
-            summary_length=len(summary_text)
+            summary_length=len(summary_result["summary_text"])
         )
 
-        logger.info(f"Summary generated successfully in {processing_time}ms")
+        logger.info(f"Summary generated successfully in {response.processing_time_ms}ms")
         return response
 
     except ValueError as e:

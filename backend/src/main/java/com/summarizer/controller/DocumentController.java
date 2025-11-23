@@ -10,6 +10,7 @@ import com.summarizer.service.DocumentProcessingService;
 import com.summarizer.service.MappingService;
 import com.summarizer.service.SummaryService;
 import com.summarizer.service.UserService;
+import org.apache.tika.exception.TikaException;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,7 +56,7 @@ public class DocumentController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         UUID userId = userService.getCurrentUserId(userDetails.getUsername());
@@ -70,16 +70,12 @@ public class DocumentController {
                     document.getFileType(),
                     document.getFileSize(),
                     document.getStatus(),
-                    document.getUploadTimestamp()
-            );
+                    document.getUploadTimestamp());
 
             return ResponseEntity.ok(response);
+        } catch (IOException | TikaException e) {
+            throw new RuntimeException("Failed to process file: " + e.getMessage(), e);
         }
-        catch (IOException e) {
-           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-       } catch (Exception e) {
-           return ResponseEntity.badRequest().build();
-       }
     }
 
     @GetMapping
@@ -92,22 +88,18 @@ public class DocumentController {
 
         UUID userId = userService.getCurrentUserId(userDetails.getUsername());
 
-        Sort sort = sortDir.equalsIgnoreCase("desc") ?
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Document> documents = userService.getUserDocuments(userId, pageable);
 
-        Page<DocumentUploadResponse> response = documents.map(doc ->
-            new DocumentUploadResponse(
+        Page<DocumentUploadResponse> response = documents.map(doc -> new DocumentUploadResponse(
                 doc.getId(),
                 doc.getOriginalFilename(),
                 doc.getFileType(),
                 doc.getFileSize(),
                 doc.getStatus(),
-                doc.getUploadTimestamp()
-            )
-        );
+                doc.getUploadTimestamp()));
 
         return ResponseEntity.ok(response);
     }
@@ -151,7 +143,7 @@ public class DocumentController {
         Document document = userService.getUserDocument(id, userId);
 
         try {
-            Path filePath = Paths.get(document.getFilePath());
+            Path filePath = Path.of(document.getFilePath());
             Resource resource = new FileSystemResource(filePath);
 
             if (!resource.exists()) {
@@ -164,10 +156,10 @@ public class DocumentController {
             }
 
             return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"" + document.getOriginalFilename() + "\"")
-                .body(resource);
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + document.getOriginalFilename() + "\"")
+                    .body(resource);
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -185,14 +177,8 @@ public class DocumentController {
         // Verify document belongs to user
         userService.getUserDocument(id, userId);
 
-        SummaryResponse resp = mappingService.toSummaryResponse(summaryService.createSummary(id, summaryRequest.getSummaryRatio()));
-        Summary summary = new Summary();
-        summary.setSummaryText(resp.getSummaryText());
-        summary.setSummaryRatio(resp.getSummaryRatio());
-        summary.setCreatedAt(resp.getCreatedAt());
-        summary.setId(resp.getId());
-        
-        summaryRepository.save(summary);
+        SummaryResponse resp = mappingService
+                .toSummaryResponse(summaryService.createSummary(id, summaryRequest.getSummaryRatio()));
 
         return ResponseEntity.ok(resp);
     }
@@ -224,16 +210,13 @@ public class DocumentController {
 
         Page<Document> documents = userService.searchUserDocuments(userId, query, pageable);
 
-        Page<DocumentUploadResponse> response = documents.map(doc ->
-            new DocumentUploadResponse(
+        Page<DocumentUploadResponse> response = documents.map(doc -> new DocumentUploadResponse(
                 doc.getId(),
                 doc.getOriginalFilename(),
                 doc.getFileType(),
                 doc.getFileSize(),
                 doc.getStatus(),
-                doc.getUploadTimestamp()
-            )
-        );
+                doc.getUploadTimestamp()));
 
         return ResponseEntity.ok(response);
     }

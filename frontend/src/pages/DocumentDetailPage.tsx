@@ -256,9 +256,22 @@ const DocumentDetailPage: React.FC = () => {
         >
           Back to Documents
         </Button>
-        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          {getFileIcon(doc.fileType)} {doc.originalFilename}
-        </Typography>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" component="h1">
+            {getFileIcon(doc.fileType)} {doc.originalFilename}
+          </Typography>
+        </Box>
+        {doc.status === "completed" && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Chat />}
+            onClick={() => navigate(`/documents/${id}/interactive-summary`)}
+            sx={{ ml: 2 }}
+          >
+            Chat with AI
+          </Button>
+        )}
       </Box>
 
       {error && (

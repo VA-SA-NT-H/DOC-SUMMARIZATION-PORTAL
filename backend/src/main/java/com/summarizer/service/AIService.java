@@ -41,19 +41,26 @@ public class AIService {
     }
 
     private String generateFallbackSummary(String contentText, BigDecimal summaryRatio) {
-        // Simple fallback summarization
-        int targetLength = (int) (contentText.length() * summaryRatio.doubleValue());
-
-        if (contentText.length() <= targetLength) {
-            return contentText;
+        // Improved fallback summarization: Extract first N sentences
+        if (contentText == null || contentText.isEmpty()) {
+            return "";
         }
 
-        String summary = contentText.substring(0, targetLength);
-        if (summary.lastIndexOf('.') > 0) {
-            summary = summary.substring(0, summary.lastIndexOf('.') + 1);
+        // Split by sentence boundaries (period followed by space or newline)
+        String[] sentences = contentText.split("(?<=\\.)\\s+");
+        int totalSentences = sentences.length;
+        int targetSentenceCount = Math.max(1, (int) (totalSentences * summaryRatio.doubleValue()));
+
+        StringBuilder summary = new StringBuilder();
+        for (int i = 0; i < Math.min(targetSentenceCount, totalSentences); i++) {
+            summary.append(sentences[i]).append(" ");
+            // Limit fallback summary to reasonable length (e.g., 1000 chars) to avoid huge texts
+            if (summary.length() > 1000) {
+                break;
+            }
         }
 
-        return summary;
+        return summary.toString().trim();
     }
 
     public boolean isHealthy() {

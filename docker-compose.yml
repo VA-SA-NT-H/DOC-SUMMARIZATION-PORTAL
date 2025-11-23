@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: summarizer-postgres
+    container_name: doc-postgres
     environment:
       POSTGRES_DB: summarizer
       POSTGRES_USER: postgres
@@ -18,7 +18,7 @@ services:
     networks:
       - summarizer-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U summarizer_user -d summarizer"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d summarizer" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: summarizer-redis
+    container_name: doc-redis
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -36,7 +36,7 @@ services:
     networks:
       - summarizer-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,12 +46,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: summarizer-backend
+    container_name: doc-backend
     environment:
       DATABASE_URL: jdbc:postgresql://postgres:5432/summarizer
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: 2004
       JWT_SECRET: your-256-bit-secret-key-should-be-at-least-256-bits-long
+      INTERNAL_API_KEY: super-secret-internal-key-12345
       AI_SERVICE_URL: http://ai-service:8001
       FILE_STORAGE_PATH: /app/uploads
       MAX_FILE_SIZE: 52428800
@@ -74,11 +75,14 @@ services:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
-    container_name: summarizer-ai-service
+    container_name: doc-ai-service
     environment:
-      MODEL_CACHE_DIR: /app/models
-      MAX_TEXT_LENGTH: 1000000
-      BATCH_SIZE: 8
+      - MODEL_CACHE_DIR=/app/models
+      - MAX_TEXT_LENGTH=1000000
+      - BATCH_SIZE=8
+      - BACKEND_URL=http://backend:8080
+      - INTERNAL_API_KEY=super-secret-internal-key-12345
+      - GOOGLE_API_KEY=AIzaSyB0YOWYhyAZ-0FfQAhPC3HeqnLcTXzYOMo
     volumes:
       - ai_models:/app/models
     ports:
@@ -87,18 +91,22 @@ services:
       - summarizer-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s  # Give more time for models to load
+      start_period: 120s # Give more time for models to load
 
   # React Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: summarizer-frontend
+      args:
+        REACT_APP_API_URL: http://localhost:8080/api
+        REACT_APP_WS_URL: ws://localhost:8080/ws
+        REACT_APP_CHAT_WS_URL: ws://localhost:3000
+    container_name: doc-frontend
     ports:
       - "3000:80"
     depends_on:

@@ -33,10 +33,7 @@ const InteractiveSummaryPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Initialize chat hook
-  const chatHook = useSummaryChat({
-    summaryId: documentId || 'default'
-  });
+
 
   // Fetch document and summary data
   const { data: document, isLoading: documentLoading, error: documentError } = useQuery(
@@ -64,6 +61,11 @@ const InteractiveSummaryPage: React.FC = () => {
 
   // Get the latest summary for display
   const latestSummary = summaries?.[summaries.length - 1];
+
+  // Initialize chat hook with the correct summary ID
+  const chatHook = useSummaryChat({
+    summaryId: latestSummary?.id || ''
+  });
 
   if (documentLoading || summariesLoading) {
     return (
@@ -106,134 +108,50 @@ const InteractiveSummaryPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* Header with Breadcrumbs */}
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <IconButton
-            onClick={() => navigate(`/documents/${documentId}`)}
-            title="Back to document"
-          >
-            <BackIcon />
-          </IconButton>
-          <Breadcrumbs aria-label="breadcrumb">
-            <Link
-              color="inherit"
-              href="/"
-              onClick={(e) => handleBreadcrumbClick(e, '/')}
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-            >
-              <HomeIcon fontSize="inherit" />
-              Home
-            </Link>
-            <Link
-              color="inherit"
-              href="/documents"
-              onClick={(e) => handleBreadcrumbClick(e, '/documents')}
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-            >
-              <DocumentIcon fontSize="inherit" />
-              Documents
-            </Link>
-            <Link
-              color="inherit"
-              href={`/documents/${documentId}`}
-              onClick={(e) => handleBreadcrumbClick(e, `/documents/${documentId}`)}
-            >
-              {document.originalFilename || document.id}
-            </Link>
-            <Typography
-              color="text.primary"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-            >
-              <ChatIcon fontSize="inherit" />
-              Interactive Summary
-            </Typography>
-          </Breadcrumbs>
-        </Box>
-
-        {/* Page Title */}
-        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-          Interactive Summary View
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Discuss this document with an AI assistant that has access to the full content
+    <Container maxWidth={false} disableGutters sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#f5f5f5' }}>
+      {/* Header with Back Button */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', bgcolor: 'white', borderBottom: '1px solid #e0e0e0' }}>
+        <IconButton
+          onClick={() => navigate(`/documents/${documentId}`)}
+          title="Back to document"
+          edge="start"
+        >
+          <BackIcon />
+        </IconButton>
+        <Typography variant="h6" component="h1" sx={{ ml: 2 }}>
+          {document?.originalFilename || 'Document'} - AI Chat
         </Typography>
       </Box>
 
-      {/* Main Content - Split Layout */}
-      <Grid container spacing={3}>
-        {/* Left Panel - Enhanced Summary Display */}
-        <Grid item xs={12} md={6}>
-          <Box sx={{ height: 'calc(100vh - 240px)', minHeight: 600 }}>
-            {latestSummary ? (
-              <EnhancedSummaryDisplay
-                summaryText={latestSummary.summaryText}
-                modelUsed={latestSummary.modelUsed}
-                confidenceScore={latestSummary.confidenceScore}
-                createdAt={latestSummary.createdAt}
-                maxContentHeight={isMobile ? 400 : 600}
-              />
-            ) : (
-              <Paper
-                elevation={2}
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  p: 4,
-                  textAlign: 'center'
-                }}
-              >
-                <Box>
-                  <ChatIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    No Summary Available
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    This document doesn't have a summary yet. Generate a summary first to use the interactive view.
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
-          </Box>
-        </Grid>
-
-        {/* Right Panel - Chat Interface */}
-        <Grid item xs={12} md={6}>
-          <Box sx={{ height: 'calc(100vh - 240px)', minHeight: 600 }}>
+      {/* Main Content - Unified Layout */}
+      <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', p: 2 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: 2
+          }}
+        >
+          {/* Chat Interface (Full Height) */}
+          <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
             {latestSummary ? (
               <SummaryChat
                 summaryId={latestSummary.id || documentId || 'default'}
                 chatHook={chatHook}
-                maxContentHeight={isMobile ? 400 : 600}
+                maxContentHeight={2000} // Large enough to not constrain
+                initialSummary={latestSummary.summaryText}
               />
             ) : (
-              <Paper
-                elevation={2}
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  p: 4,
-                  textAlign: 'center'
-                }}
-              >
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Chat Unavailable
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Generate a summary first to start chatting with the AI assistant.
-                  </Typography>
-                </Box>
-              </Paper>
+              <Box p={4} textAlign="center">
+                <Typography color="text.secondary">Chat unavailable</Typography>
+              </Box>
             )}
           </Box>
-        </Grid>
-      </Grid>
+        </Paper>
+      </Box>
 
       {/* Connection Status Indicator */}
       <Box

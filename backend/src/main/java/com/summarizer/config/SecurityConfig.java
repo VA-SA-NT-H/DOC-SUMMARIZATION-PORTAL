@@ -36,12 +36,12 @@ public class SecurityConfig {
     // private CustomUserDetailsService customUserDetailsService;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -63,7 +63,7 @@ public class SecurityConfig {
     // }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
@@ -88,6 +88,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/documents/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/documents/**").authenticated()
                         .requestMatchers("/api/summaries/**").authenticated()
+                        .requestMatchers("/api/internal/**").permitAll()
 
                         .anyRequest().authenticated())
 
@@ -104,7 +105,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
